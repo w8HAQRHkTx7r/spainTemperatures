@@ -23,17 +23,13 @@ def unix_to_date(unix_time):
     hour = time_struct.tm_hour
     minute = time_struct.tm_min
 
-    # Return a tuple containing month, day, and day of week
+    # Return a string containing month, day, DOW, hh:mm
     return f"{day_of_week} {month} {day} {hour}:{minute:02d}"
 
-def null(parm):
-    return parm
-
-def twoDec(parm):
+def oneDecimal(parm):
     return f"{parm:4.1f}"
 
 def query():
-    print("Get fresh data")
     CURRENT_SPAIN_CONDITIONS = []
     for c in cities:
         lat = c['lat']
@@ -43,7 +39,7 @@ def query():
         try:
             value = pyportal.fetch(URL)
             CURRENT_SPAIN_CONDITIONS.append(value)
-            time.sleep(3)
+            time.sleep(2)
         except RuntimeError as e:
             print("Some error occured, retrying! -", e)
     status_label.text = " "
@@ -129,15 +125,12 @@ def draw_circles(special_city):
 
 draw_circles(0)
 pyportal.splash.append(CIRCLES_GROUP)
-print(f'There are {len(CIRCLES_GROUP)} circles in the group')
-
 pyportal.splash.append(LABELS_GROUP)
 
 CURRENT_SPAIN_CONDITIONS = []
 CURRENT_SPAIN_CONDITIONS = query()
 
-status_label.text = ""
-
+# Font for temperature data
 font_name = "Arial-Bold-12.bdf"
 font = bitmap_font.load_font("fonts/"+font_name)
 font.load_glyphs(b'abcdefghjiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ- ()0123456789.:')
@@ -160,6 +153,7 @@ lblMax = Label(font, text = "*"*4, color=0xffffff)
 lblMax.x = 170
 lblMax.y = 60
 lblMax.background_color = 0xff0000
+
 # Put the labels in a group
 DATA_GROUP = displayio.Group()
 DATA_GROUP.append(lblTime)
@@ -167,24 +161,24 @@ DATA_GROUP.append(lblConditions)
 DATA_GROUP.append(lblMin)
 DATA_GROUP.append(lblNow)
 DATA_GROUP.append(lblMax)
+
 # Put the group into the main group (splash)
 pyportal.splash.append(DATA_GROUP)
 
+# Display the data and loop
 timeout = 3600
 while True:
-    starttime = time.monotonic()
     currenttime = time.monotonic()
-    limit = starttime + timeout
+    limit = currenttime + timeout
     while currenttime < limit:
         for idx, conditions in enumerate(CURRENT_SPAIN_CONDITIONS):
             draw_circles(idx)
             lblTime.text = unix_to_date(conditions[0])
             lblConditions.text = conditions[2]
-            lblMin.text = twoDec(conditions[4])
-            lblMax.text = twoDec(conditions[3])
-            lblNow.text = twoDec(conditions[1])
-            time.sleep(5)
+            lblMin.text = oneDecimal(conditions[4])
+            lblMax.text = oneDecimal(conditions[3])
+            lblNow.text = oneDecimal(conditions[1])
+            time.sleep(4)
         currenttime = time.monotonic()
-        print(f'Current: {currenttime} Limit: {limit}')
     print("Time to freshen the data")
     CURRENT_SPAIN_CONDITIONS = query()
